@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>提示词管理平台</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>项目列表</h2>
+                <button class="btn btn-primary btn-sm" onclick="showCreateProjectModal()">+ 新建项目</button>
+            </div>
+            <div class="project-list" id="projectList">
+            </div>
+        </aside>
+        
+        <main class="main-content">
+            <div class="main-header">
+                <h2 id="currentProjectTitle">所有提示词</h2>
+                <div class="header-actions">
+                    <span id="currentUser"></span>
+                    <button class="btn btn-secondary btn-sm" onclick="window.location.href='/admin'">后台管理</button>
+                    <button class="btn btn-danger btn-sm" onclick="logout()">退出</button>
+                </div>
+            </div>
+            <div class="main-header">
+                <button class="btn btn-primary" onclick="showCreatePromptModal()" id="createPromptBtn" disabled>+ 新建提示词</button>
+                <button class="btn btn-danger" onclick="showDeleteProjectModal()" id="deleteProjectBtn" style="display: none;">删除项目</button>
+            </div>
+            <div class="prompt-list" id="promptList">
+            </div>
+        </main>
+    </div>
+
+    <div class="modal" id="createProjectModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>新建项目</h3>
+                <span class="close" onclick="closeModal('createProjectModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>项目名称</label>
+                    <input type="text" id="projectName" placeholder="请输入项目名称">
+                </div>
+                <div class="form-group">
+                    <label>项目描述</label>
+                    <textarea id="projectDescription" placeholder="请输入项目描述（可选）"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('createProjectModal')">取消</button>
+                <button class="btn btn-primary" onclick="createProject()">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="createPromptModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>新建提示词</h3>
+                <span class="close" onclick="closeModal('createPromptModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>标题</label>
+                    <input type="text" id="promptTitle" placeholder="请输入提示词标题">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('createPromptModal')">取消</button>
+                <button class="btn btn-primary" onclick="createPrompt()">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="deleteProjectModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>删除项目</h3>
+                <span class="close" onclick="closeModal('deleteProjectModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>确定要删除项目 <strong id="deleteProjectName"></strong> 吗？</p>
+                <p style="color: #d32f2f; margin-top: 10px;">此操作将删除该项目下的所有提示词，且无法恢复！</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('deleteProjectModal')">取消</button>
+                <button class="btn btn-danger" onclick="deleteProject()">确定删除</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/index.js"></script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>提示词详情</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container detail-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>历史版本</h2>
+            </div>
+            <div class="version-list" id="versionList">
+            </div>
+        </aside>
+        
+        <main class="main-content">
+            <div class="main-header">
+                <button class="btn btn-secondary" onclick="goBack()">← 返回</button>
+                <h2 id="promptTitle">提示词标题</h2>
+                <div class="actions">
+                    <span id="currentUser"></span>
+                    <button class="btn btn-secondary" id="editBtn" onclick="toggleEditMode()">编辑</button>
+                    <button class="btn btn-primary" id="saveBtn" onclick="savePrompt()" style="display: none;">保存</button>
+                    <button class="btn btn-danger" onclick="deletePrompt()">删除</button>
+                </div>
+            </div>
+            <div class="prompt-detail">
+                <div class="form-group">
+                    <label>标题</label>
+                    <input type="text" id="promptTitleInput" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                    <label>内容</label>
+                    <textarea id="promptContentInput" class="form-control textarea-large" readonly></textarea>
+                </div>
+                <div class="meta-info">
+                    <span>创建时间: <span id="createdAt"></span></span>
+                    <span>更新时间: <span id="updatedAt"></span></span>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal" id="renameVersionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>重命名版本</h3>
+                <span class="close" onclick="closeModal('renameVersionModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>版本名称</label>
+                    <input type="text" id="versionNameInput" placeholder="请输入版本名称">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('renameVersionModal')">取消</button>
+                <button class="btn btn-primary" onclick="renameVersion()">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const promptId = {{ prompt_id }};
+    </script>
+    <script src="/static/js/prompt_detail.js"></script>
+</body>
+</html>

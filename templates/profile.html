@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人中心 - 提示词管理平台</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/profile.css">
+</head>
+<body>
+    <div class="profile-container">
+        <div class="header">
+            <h1>个人中心</h1>
+            <div class="user-info">
+                <span id="currentUsername"></span>
+                <a href="/" class="btn btn-secondary">返回首页</a>
+            </div>
+        </div>
+
+        <div class="profile-content">
+            <div class="profile-section">
+                <h2>个人信息</h2>
+                <div class="info-item">
+                    <label>用户名:</label>
+                    <span id="username"></span>
+                </div>
+            </div>
+
+            <div class="profile-section">
+                <h2>API Key管理</h2>
+                <div class="api-key-list" id="apiKeyList">
+                </div>
+                <button class="btn btn-primary" onclick="showCreateApiKeyModal()">+ 创建API Key</button>
+            </div>
+
+            <div class="profile-section">
+                <h2>修改密码</h2>
+                <div class="form-group">
+                    <label>旧密码</label>
+                    <input type="password" id="oldPassword" placeholder="请输入旧密码">
+                </div>
+                <div class="form-group">
+                    <label>新密码</label>
+                    <input type="password" id="newPassword" placeholder="请输入新密码">
+                </div>
+                <div class="form-group">
+                    <label>确认新密码</label>
+                    <input type="password" id="confirmPassword" placeholder="请再次输入新密码">
+                </div>
+                <button class="btn btn-primary" onclick="changePassword()">修改密码</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="createApiKeyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>创建API Key</h3>
+                <span class="close" onclick="closeModal('createApiKeyModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>API Key名称</label>
+                    <input type="text" id="apiKeyName" placeholder="请输入API Key名称">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('createApiKeyModal')">取消</button>
+                <button class="btn btn-primary" onclick="createApiKey()">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="showApiKeyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>API Key创建成功</h3>
+                <span class="close" onclick="closeModal('showApiKeyModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>请复制以下API Key，关闭后将无法再次查看</label>
+                    <input type="text" id="newApiKey" readonly>
+                </div>
+                <div class="warning-text">
+                    ⚠️ 请妥善保管此API Key，不要泄露给他人
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="copyApiKey()">复制</button>
+                <button class="btn btn-secondary" onclick="closeModal('showApiKeyModal')">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/profile.js"></script>
+</body>
+</html>
