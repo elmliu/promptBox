@@ -1,5 +1,7 @@
 # PromptBox
 
+[中文](https://github.com/elmliu/promptBox/blob/main/README_CN.md)
+
 A lightweight, comprehensive prompt management system built with Python Flask and SQLite. It supports project-based categorization, prompt version control, complete permission management, and REST API interfaces. Suitable for small to medium teams managing prompts.
 
 ## Project Highlights
