@@ -1,7 +1,14 @@
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Dict, Any
 import hashlib
+
+BEIJING_TZ = timezone(timedelta(hours=8))
+
+
+def now_beijing() -> str:
+    """返回北京时间字符串，格式: YYYY-MM-DD HH:MM:SS"""
+    return datetime.now(BEIJING_TZ).strftime('%Y-%m-%d %H:%M:%S')
 
 
 class Database:
@@ -188,9 +195,10 @@ class ProjectModel:
         self.db = db
 
     def create(self, name: str, description: str = '') -> int:
+        now = now_beijing()
         cursor = self.db.execute_query(
-            'INSERT INTO projects (name, description) VALUES (?, ?)',
-            (name, description)
+            'INSERT INTO projects (name, description, created_at, updated_at) VALUES (?, ?, ?, ?)',
+            (name, description, now, now)
         )
         return cursor.lastrowid
 
@@ -214,26 +222,19 @@ class ProjectModel:
         if not updates:
             return False
         
-        updates.append('updated_at = CURRENT_TIMESTAMP')
+        updates.append('updated_at = ?')
+        params.append(now_beijing())
         params.append(project_id)
         
         query = f'UPDATE projects SET {", ".join(updates)} WHERE id = ?'
-        self.db.execute_query(query, tuple(params))
-        return True
-
-    def delete(self, project_id: int) -> bool:
-        self.db.execute_query('DELETE FROM projects WHERE id = ?', (project_id,))
-        return True
-
-
-class PromptModel:
     def __init__(self, db: Database):
         self.db = db
 
     def create(self, project_id: int, title: str, content: str) -> int:
+        now = now_beijing()
         cursor = self.db.execute_query(
-            'INSERT INTO prompts (project_id, title, content) VALUES (?, ?, ?)',
-            (project_id, title, content)
+            'INSERT INTO prompts (project_id, title, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+            (project_id, title, content, now, now)
         )
         return cursor.lastrowid
 
@@ -262,7 +263,8 @@ class PromptModel:
         if not updates:
             return False
         
-        updates.append('updated_at = CURRENT_TIMESTAMP')
+        updates.append('updated_at = ?')
+        params.append(now_beijing())
         params.append(prompt_id)
         
         query = f'UPDATE prompts SET {", ".join(updates)} WHERE id = ?'
@@ -279,9 +281,10 @@ class PromptVersionModel:
         self.db = db
 
     def create(self, prompt_id: int, version_number: int, title: str, content: str, version_name: str = None) -> int:
+        now = now_beijing()
         cursor = self.db.execute_query(
-            'INSERT INTO prompt_versions (prompt_id, version_number, title, content, version_name) VALUES (?, ?, ?, ?, ?)',
-            (prompt_id, version_number, title, content, version_name)
+            'INSERT INTO prompt_versions (prompt_id, version_number, title, content, version_name, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+            (prompt_id, version_number, title, content, version_name, now)
         )
         return cursor.lastrowid
 
@@ -325,9 +328,10 @@ class UserModel:
 
     def create(self, username: str, password: str, is_admin: bool = False) -> int:
         password_hash = hashlib.sha256(password.encode()).hexdigest()
+        now = now_beijing()
         cursor = self.db.execute_query(
-            'INSERT INTO users (username, password, is_admin) VALUES (?, ?, ?)',
-            (username, password_hash, 1 if is_admin else 0)
+            'INSERT INTO users (username, password, is_admin, created_at) VALUES (?, ?, ?, ?)',
+            (username, password_hash, 1 if is_admin else 0, now)
         )
         return cursor.lastrowid
 
@@ -362,9 +366,10 @@ class GroupModel:
         self.db = db
 
     def create(self, name: str, description: str = '') -> int:
+        now = now_beijing()
         cursor = self.db.execute_query(
-            'INSERT INTO groups (name, description) VALUES (?, ?)',
-            (name, description)
+            'INSERT INTO groups (name, description, created_at) VALUES (?, ?, ?)',
+            (name, description, now)
         )
         return cursor.lastrowid
 
@@ -405,9 +410,10 @@ class UserGroupModel:
         self.db = db
 
     def add_user_to_group(self, user_id: int, group_id: int) -> int:
+        now = now_beijing()
         cursor = self.db.execute_query(
-            'INSERT INTO user_groups (user_id, group_id) VALUES (?, ?)',
-            (user_id, group_id)
+            'INSERT INTO user_groups (user_id, group_id, created_at) VALUES (?, ?, ?)',
+            (user_id, group_id, now)
         )
         return cursor.lastrowid
 
@@ -443,9 +449,10 @@ class ProjectPermissionModel:
         self.db = db
 
     def grant_permission(self, project_id: int, user_id: int = None, group_id: int = None) -> int:
+        now = now_beijing()
         cursor = self.db.execute_query(
-            'INSERT INTO project_permissions (project_id, user_id, group_id) VALUES (?, ?, ?)',
-            (project_id, user_id, group_id)
+            'INSERT INTO project_permissions (project_id, user_id, group_id, created_at) VALUES (?, ?, ?, ?)',
+            (project_id, user_id, group_id, now)
         )
         return cursor.lastrowid
 
@@ -492,10 +499,11 @@ class ApiKeyModel:
         import secrets
         api_key = 'pk_' + secrets.token_urlsafe(32)
         key_hash = hashlib.sha256(api_key.encode()).hexdigest()
+        now = now_beijing()
         
         cursor = self.db.execute_query(
-            'INSERT INTO api_keys (user_id, key_hash, name) VALUES (?, ?, ?)',
-            (user_id, key_hash, name)
+            'INSERT INTO api_keys (user_id, key_hash, name, created_at) VALUES (?, ?, ?, ?)',
+            (user_id, key_hash, name, now)
         )
         return cursor.lastrowid, api_key
 
@@ -520,8 +528,8 @@ class ApiKeyModel:
         
         if result:
             self.db.execute_query(
-                'UPDATE api_keys SET last_used_at = CURRENT_TIMESTAMP WHERE id = ?',
-                (result['id'],)
+                'UPDATE api_keys SET last_used_at = ? WHERE id = ?',
+                (now_beijing(), result['id'])
             )
         
         return result
