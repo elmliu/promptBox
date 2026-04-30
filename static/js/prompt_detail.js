@@ -239,7 +239,11 @@ async function deletePrompt() {
         const result = await response.json();
         
         if (result.success) {
-            window.location.href = '/';
+            if (promptData && promptData.project_id) {
+                window.location.href = '/?project_id=' + promptData.project_id;
+            } else {
+                window.location.href = '/';
+            }
         } else {
             alert(result.error || '删除失败');
         }
@@ -289,7 +293,11 @@ function closeModal(modalId) {
 }
 
 function goBack() {
-    window.location.href = '/';
+    if (promptData && promptData.project_id) {
+        window.location.href = '/?project_id=' + promptData.project_id;
+    } else {
+        window.location.href = '/';
+    }
 }
 
 function escapeHtml(text) {

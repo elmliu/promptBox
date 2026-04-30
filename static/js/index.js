@@ -242,4 +242,10 @@ function escapeHtml(text) {
 }
 
 loadCurrentUser();
-loadProjects();
+loadProjects().then(() => {
+    const params = new URLSearchParams(window.location.search);
+    const projectId = params.get('project_id');
+    if (projectId) {
+        selectProject(parseInt(projectId));
+    }
+});
