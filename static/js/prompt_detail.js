@@ -120,6 +120,7 @@ function displayVersion(version) {
 }
 
 function displayPrompt() {
+    document.title = promptData.title;
     document.getElementById('promptTitle').textContent = promptData.title;
     document.getElementById('promptTitleInput').value = promptData.title;
     document.getElementById('promptContentInput').value = promptData.content;
