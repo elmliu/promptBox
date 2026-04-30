@@ -227,6 +227,15 @@ class ProjectModel:
         params.append(project_id)
         
         query = f'UPDATE projects SET {", ".join(updates)} WHERE id = ?'
+        self.db.execute_query(query, tuple(params))
+        return True
+
+    def delete(self, project_id: int) -> bool:
+        self.db.execute_query('DELETE FROM projects WHERE id = ?', (project_id,))
+        return True
+
+
+class PromptModel:
     def __init__(self, db: Database):
         self.db = db
 
