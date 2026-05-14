@@ -117,6 +117,29 @@ class Database:
             )
         ''')
         
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS tags (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                project_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE,
+                UNIQUE(project_id, name)
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS prompt_tags (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                prompt_id INTEGER NOT NULL,
+                tag_id INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (prompt_id) REFERENCES prompts (id) ON DELETE CASCADE,
+                FOREIGN KEY (tag_id) REFERENCES tags (id) ON DELETE CASCADE,
+                UNIQUE(prompt_id, tag_id)
+            )
+        ''')
+        
         conn.commit()
         conn.close()
         
@@ -546,3 +569,73 @@ class ApiKeyModel:
     def delete(self, key_id: int) -> bool:
         self.db.execute_query('DELETE FROM api_keys WHERE id = ?', (key_id,))
         return True
+
+
+class TagModel:
+    def __init__(self, db: Database):
+        self.db = db
+
+    def create(self, project_id: int, name: str) -> int:
+        now = now_beijing()
+        cursor = self.db.execute_query(
+            'INSERT OR IGNORE INTO tags (project_id, name, created_at) VALUES (?, ?, ?)',
+            (project_id, name, now)
+        )
+        if cursor.lastrowid:
+            return cursor.lastrowid
+        # If already exists, return existing id
+        result = self.db.fetch_one(
+            'SELECT id FROM tags WHERE project_id = ? AND name = ?',
+            (project_id, name)
+        )
+        return result['id'] if result else 0
+
+    def get_project_tags(self, project_id: int) -> List[Dict[str, Any]]:
+        return self.db.fetch_all(
+            'SELECT * FROM tags WHERE project_id = ? ORDER BY name',
+            (project_id,)
+        )
+
+    def get_prompt_tags(self, prompt_id: int) -> List[Dict[str, Any]]:
+        return self.db.fetch_all(
+            '''SELECT t.* FROM tags t
+               JOIN prompt_tags pt ON t.id = pt.tag_id
+               WHERE pt.prompt_id = ?
+               ORDER BY t.name''',
+            (prompt_id,)
+        )
+
+    def add_tag_to_prompt(self, prompt_id: int, tag_id: int) -> bool:
+        now = now_beijing()
+        try:
+            self.db.execute_query(
+                'INSERT OR IGNORE INTO prompt_tags (prompt_id, tag_id, created_at) VALUES (?, ?, ?)',
+                (prompt_id, tag_id, now)
+            )
+            return True
+        except Exception:
+            return False
+
+    def remove_tag_from_prompt(self, prompt_id: int, tag_id: int) -> bool:
+        self.db.execute_query(
+            'DELETE FROM prompt_tags WHERE prompt_id = ? AND tag_id = ?',
+            (prompt_id, tag_id)
+        )
+        return True
+
+    def delete(self, tag_id: int) -> bool:
+        self.db.execute_query('DELETE FROM tags WHERE id = ?', (tag_id,))
+        return True
+
+    def get_prompts_by_tags(self, project_id: int, tag_ids: List[int]) -> List[Dict[str, Any]]:
+        """获取同时拥有所有指定标签的提示词"""
+        placeholders = ','.join(['?' for _ in tag_ids])
+        return self.db.fetch_all(
+            f'''SELECT p.* FROM prompts p
+                JOIN prompt_tags pt ON p.id = pt.prompt_id
+                WHERE p.project_id = ? AND pt.tag_id IN ({placeholders})
+                GROUP BY p.id
+                HAVING COUNT(DISTINCT pt.tag_id) = ?
+                ORDER BY p.created_at DESC''',
+            (project_id, *tag_ids, len(tag_ids))
+        )

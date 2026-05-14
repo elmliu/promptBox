@@ -3,6 +3,8 @@ let promptData = null;
 let versions = [];
 let currentVersionId = null;
 let selectedVersionId = null;
+let promptTags = [];
+let projectTags = [];
 
 async function loadPrompt() {
     try {
@@ -13,6 +15,8 @@ async function loadPrompt() {
             promptData = result.data;
             displayPrompt();
             loadVersions();
+            loadPromptTags();
+            loadProjectTags();
         } else {
             alert('加载提示词失败');
             window.location.href = '/';
@@ -21,6 +25,98 @@ async function loadPrompt() {
         console.error('加载提示词失败:', error);
         alert('加载提示词失败');
         window.location.href = '/';
+    }
+}
+
+async function loadPromptTags() {
+    try {
+        const response = await fetch(`/api/prompts/${promptId}/tags`);
+        const result = await response.json();
+        if (result.success) {
+            promptTags = result.data;
+            renderPromptTags();
+        }
+    } catch (error) {
+        console.error('加载标签失败:', error);
+    }
+}
+
+async function loadProjectTags() {
+    if (!promptData) return;
+    try {
+        const response = await fetch(`/api/projects/${promptData.project_id}/tags`);
+        const result = await response.json();
+        if (result.success) {
+            projectTags = result.data;
+            renderExistingTagsList();
+        }
+    } catch (error) {
+        console.error('加载项目标签失败:', error);
+    }
+}
+
+function renderPromptTags() {
+    const tagList = document.getElementById('promptTagList');
+    tagList.innerHTML = '';
+    
+    promptTags.forEach(tag => {
+        const span = document.createElement('span');
+        span.className = 'tag-item';
+        span.innerHTML = `${escapeHtml(tag.name)}<span class="tag-remove" onclick="removeTag(${tag.id})">&times;</span>`;
+        tagList.appendChild(span);
+    });
+}
+
+function renderExistingTagsList() {
+    const datalist = document.getElementById('existingTagsList');
+    datalist.innerHTML = '';
+    
+    const promptTagIds = promptTags.map(t => t.id);
+    projectTags.filter(t => !promptTagIds.includes(t.id)).forEach(tag => {
+        const option = document.createElement('option');
+        option.value = tag.name;
+        datalist.appendChild(option);
+    });
+}
+
+async function addTag(tagName) {
+    tagName = tagName.trim();
+    if (!tagName) return;
+    
+    // Check if this tag already exists in project
+    const existingTag = projectTags.find(t => t.name === tagName);
+    
+    try {
+        const body = existingTag ? { tag_id: existingTag.id } : { tag_name: tagName };
+        const response = await fetch(`/api/prompts/${promptId}/tags`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const result = await response.json();
+        if (result.success) {
+            loadPromptTags();
+            loadProjectTags();
+        } else {
+            alert(result.error || '添加标签失败');
+        }
+    } catch (error) {
+        console.error('添加标签失败:', error);
+    }
+}
+
+async function removeTag(tagId) {
+    try {
+        const response = await fetch(`/api/prompts/${promptId}/tags/${tagId}`, {
+            method: 'DELETE'
+        });
+        const result = await response.json();
+        if (result.success) {
+            loadPromptTags();
+            loadProjectTags();
+        }
+    } catch (error) {
+        console.error('移除标签失败:', error);
     }
 }
 
@@ -322,3 +418,15 @@ async function loadCurrentUser() {
 
 loadCurrentUser();
 loadPrompt();
+
+// Tag input handler
+document.getElementById('tagInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        const value = this.value.trim();
+        if (value) {
+            addTag(value);
+            this.value = '';
+        }
+    }
+});

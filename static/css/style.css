@@ -624,3 +624,95 @@ body {
     text-align: center;
     padding: 20px;
 }
+
+
+/* Tag styles */
+.tag-section {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.tag-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background-color: #e3f2fd;
+    color: #1976d2;
+    border-radius: 14px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.tag-remove {
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    margin-left: 2px;
+    color: #1976d2;
+    opacity: 0.6;
+}
+
+.tag-remove:hover {
+    opacity: 1;
+}
+
+.tag-input-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+.tag-input {
+    padding: 6px 12px;
+    border: 1px solid #ddd;
+    border-radius: 14px;
+    font-size: 13px;
+    width: 200px;
+    outline: none;
+}
+
+.tag-input:focus {
+    border-color: #1976d2;
+}
+
+/* Tag filter bar on index page */
+.tag-filter-bar {
+    padding: 10px 20px;
+    border-bottom: 1px solid #e0e0e0;
+    background-color: #fafafa;
+}
+
+.tag-filter-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.tag-filter-item {
+    display: inline-block;
+    padding: 4px 12px;
+    background-color: #f0f0f0;
+    color: #555;
+    border-radius: 14px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.tag-filter-item:hover {
+    background-color: #e0e0e0;
+}
+
+.tag-filter-item.active {
+    background-color: #1976d2;
+    color: white;
+}

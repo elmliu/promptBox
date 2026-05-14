@@ -1,6 +1,8 @@
 let currentProjectId = null;
 let projects = [];
 let prompts = [];
+let projectTags = [];
+let selectedTagIds = [];
 
 async function loadCurrentUser() {
     try {
@@ -55,12 +57,66 @@ function renderProjects() {
 
 function selectProject(projectId) {
     currentProjectId = projectId;
+    selectedTagIds = [];
     const project = projects.find(p => p.id === projectId);
     document.getElementById('currentProjectTitle').textContent = project ? project.name : '所有提示词';
     document.getElementById('createPromptBtn').disabled = !projectId;
     renderProjects();
     loadPrompts();
+    loadProjectTags();
     checkCanDeleteProject();
+}
+
+async function loadProjectTags() {
+    const tagFilterBar = document.getElementById('tagFilterBar');
+    if (!currentProjectId) {
+        tagFilterBar.style.display = 'none';
+        projectTags = [];
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/projects/${currentProjectId}/tags`);
+        const result = await response.json();
+        if (result.success) {
+            projectTags = result.data;
+            renderTagFilters();
+        }
+    } catch (error) {
+        console.error('加载标签失败:', error);
+    }
+}
+
+function renderTagFilters() {
+    const tagFilterBar = document.getElementById('tagFilterBar');
+    const tagFilterList = document.getElementById('tagFilterList');
+    
+    if (projectTags.length === 0) {
+        tagFilterBar.style.display = 'none';
+        return;
+    }
+    
+    tagFilterBar.style.display = 'block';
+    tagFilterList.innerHTML = '';
+    
+    projectTags.forEach(tag => {
+        const span = document.createElement('span');
+        span.className = `tag-filter-item ${selectedTagIds.includes(tag.id) ? 'active' : ''}`;
+        span.textContent = tag.name;
+        span.onclick = () => toggleTagFilter(tag.id);
+        tagFilterList.appendChild(span);
+    });
+}
+
+function toggleTagFilter(tagId) {
+    const index = selectedTagIds.indexOf(tagId);
+    if (index === -1) {
+        selectedTagIds.push(tagId);
+    } else {
+        selectedTagIds.splice(index, 1);
+    }
+    renderTagFilters();
+    loadPrompts();
 }
 
 async function checkCanDeleteProject() {
@@ -85,7 +141,12 @@ async function checkCanDeleteProject() {
 
 async function loadPrompts() {
     try {
-        const url = currentProjectId ? `/api/prompts?project_id=${currentProjectId}` : '/api/prompts';
+        let url;
+        if (selectedTagIds.length > 0 && currentProjectId) {
+            url = `/api/projects/${currentProjectId}/prompts-by-tags?tag_ids=${selectedTagIds.join(',')}`;
+        } else {
+            url = currentProjectId ? `/api/prompts?project_id=${currentProjectId}` : '/api/prompts';
+        }
         const response = await fetch(url);
         const result = await response.json();
         if (result.success) {
@@ -109,7 +170,7 @@ function renderPrompts() {
     prompts.forEach(prompt => {
         const div = document.createElement('div');
         div.className = 'prompt-item';
-        div.onclick = () => window.location.href = `/prompt/${prompt.id}`;
+        div.onclick = () => window.open(`/prompt/${prompt.id}`, '_blank');
         div.innerHTML = `
             <h3>${escapeHtml(prompt.title)}</h3>
             <p>${escapeHtml(prompt.content)}</p>
@@ -215,6 +276,7 @@ async function deleteProject() {
             document.getElementById('currentProjectTitle').textContent = '所有提示词';
             document.getElementById('createPromptBtn').disabled = true;
             document.getElementById('deleteProjectBtn').style.display = 'none';
+            document.getElementById('tagFilterBar').style.display = 'none';
             loadProjects();
             loadPrompts();
         } else {

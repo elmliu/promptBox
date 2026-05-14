@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for
 from functools import wraps
-from models import Database, ProjectModel, PromptModel, PromptVersionModel, UserModel, GroupModel, UserGroupModel, ProjectPermissionModel, ApiKeyModel
+from models import Database, ProjectModel, PromptModel, PromptVersionModel, UserModel, GroupModel, UserGroupModel, ProjectPermissionModel, ApiKeyModel, TagModel
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-change-this-in-production'
@@ -14,6 +14,7 @@ group_model = GroupModel(db)
 user_group_model = UserGroupModel(db)
 project_permission_model = ProjectPermissionModel(db)
 api_key_model = ApiKeyModel(db)
+tag_model = TagModel(db)
 
 
 def get_current_user_id():
@@ -651,5 +652,119 @@ def can_delete_project(project_id):
     return jsonify({'success': True, 'data': {'can_delete': can_delete}})
 
 
+@app.route('/api/projects/<int:project_id>/tags', methods=['GET'])
+@login_required
+def get_project_tags(project_id):
+    if not is_admin():
+        user_id = get_current_user_id()
+        if not project_permission_model.check_user_project_permission(user_id, project_id):
+            return jsonify({'success': False, 'error': '没有权限访问此项目'}), 403
+    tags = tag_model.get_project_tags(project_id)
+    return jsonify({'success': True, 'data': tags})
+
+
+@app.route('/api/projects/<int:project_id>/tags', methods=['POST'])
+@login_required
+def create_tag(project_id):
+    if not is_admin():
+        user_id = get_current_user_id()
+        if not project_permission_model.check_user_project_permission(user_id, project_id):
+            return jsonify({'success': False, 'error': '没有权限'}), 403
+    
+    data = request.get_json()
+    name = data.get('name', '').strip()
+    
+    if not name:
+        return jsonify({'success': False, 'error': '标签名称不能为空'}), 400
+    
+    try:
+        tag_id = tag_model.create(project_id, name)
+        return jsonify({'success': True, 'data': {'id': tag_id, 'name': name}})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
+@app.route('/api/prompts/<int:prompt_id>/tags', methods=['GET'])
+@login_required
+def get_prompt_tags(prompt_id):
+    prompt = prompt_model.get_by_id(prompt_id)
+    if not prompt:
+        return jsonify({'success': False, 'error': '提示词不存在'}), 404
+    
+    if not is_admin():
+        user_id = get_current_user_id()
+        if not project_permission_model.check_user_project_permission(user_id, prompt['project_id']):
+            return jsonify({'success': False, 'error': '没有权限'}), 403
+    
+    tags = tag_model.get_prompt_tags(prompt_id)
+    return jsonify({'success': True, 'data': tags})
+
+
+@app.route('/api/prompts/<int:prompt_id>/tags', methods=['POST'])
+@login_required
+def add_tag_to_prompt(prompt_id):
+    prompt = prompt_model.get_by_id(prompt_id)
+    if not prompt:
+        return jsonify({'success': False, 'error': '提示词不存在'}), 404
+    
+    if not is_admin():
+        user_id = get_current_user_id()
+        if not project_permission_model.check_user_project_permission(user_id, prompt['project_id']):
+            return jsonify({'success': False, 'error': '没有权限'}), 403
+    
+    data = request.get_json()
+    tag_id = data.get('tag_id')
+    tag_name = data.get('tag_name', '').strip()
+    
+    if not tag_id and not tag_name:
+        return jsonify({'success': False, 'error': '请提供标签ID或标签名称'}), 400
+    
+    try:
+        if not tag_id and tag_name:
+            tag_id = tag_model.create(prompt['project_id'], tag_name)
+        
+        tag_model.add_tag_to_prompt(prompt_id, tag_id)
+        return jsonify({'success': True, 'data': {'tag_id': tag_id}})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
+@app.route('/api/prompts/<int:prompt_id>/tags/<int:tag_id>', methods=['DELETE'])
+@login_required
+def remove_tag_from_prompt(prompt_id, tag_id):
+    prompt = prompt_model.get_by_id(prompt_id)
+    if not prompt:
+        return jsonify({'success': False, 'error': '提示词不存在'}), 404
+    
+    if not is_admin():
+        user_id = get_current_user_id()
+        if not project_permission_model.check_user_project_permission(user_id, prompt['project_id']):
+            return jsonify({'success': False, 'error': '没有权限'}), 403
+    
+    tag_model.remove_tag_from_prompt(prompt_id, tag_id)
+    return jsonify({'success': True})
+
+
+@app.route('/api/projects/<int:project_id>/prompts-by-tags', methods=['GET'])
+@login_required
+def get_prompts_by_tags(project_id):
+    if not is_admin():
+        user_id = get_current_user_id()
+        if not project_permission_model.check_user_project_permission(user_id, project_id):
+            return jsonify({'success': False, 'error': '没有权限'}), 403
+    
+    tag_ids = request.args.get('tag_ids', '')
+    if not tag_ids:
+        return jsonify({'success': False, 'error': '请提供标签ID'}), 400
+    
+    try:
+        tag_id_list = [int(x) for x in tag_ids.split(',')]
+    except ValueError:
+        return jsonify({'success': False, 'error': '标签ID格式错误'}), 400
+    
+    prompts = tag_model.get_prompts_by_tags(project_id, tag_id_list)
+    return jsonify({'success': True, 'data': prompts})
+
+
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=False, port=6001)
