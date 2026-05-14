@@ -767,4 +767,4 @@ def get_prompts_by_tags(project_id):
 
 
 if __name__ == '__main__':
-    app.run(debug=False, port=6001)
+    app.run("0.0.0.0", debug=False, port=5000)

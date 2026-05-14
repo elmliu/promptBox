@@ -628,14 +628,12 @@ class TagModel:
         return True
 
     def get_prompts_by_tags(self, project_id: int, tag_ids: List[int]) -> List[Dict[str, Any]]:
-        """获取同时拥有所有指定标签的提示词"""
+        """获取拥有任意一个指定标签的提示词（并集）"""
         placeholders = ','.join(['?' for _ in tag_ids])
         return self.db.fetch_all(
-            f'''SELECT p.* FROM prompts p
+            f'''SELECT DISTINCT p.* FROM prompts p
                 JOIN prompt_tags pt ON p.id = pt.prompt_id
                 WHERE p.project_id = ? AND pt.tag_id IN ({placeholders})
-                GROUP BY p.id
-                HAVING COUNT(DISTINCT pt.tag_id) = ?
                 ORDER BY p.created_at DESC''',
-            (project_id, *tag_ids, len(tag_ids))
+            (project_id, *tag_ids)
         )
