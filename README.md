@@ -37,6 +37,7 @@
 
 - **项目管理**：创建、查看、编辑、删除项目
 - **提示词管理**：创建、查看、编辑、删除提示词
+- **标签管理**：为提示词添加标签，支持按标签筛选提示词
 - **版本控制**：自动保存历史版本，支持版本恢复
 - **版本命名**：为重要版本添加自定义名称
 - **按项目分类**：清晰的层级结构，便于管理
@@ -144,7 +145,14 @@ python app.py
    - 编辑提示词时自动创建新版本
    - 点击历史版本可恢复到任意版本
    - 为重要版本添加自定义名称
-5. **权限管理**（管理员）
+5. **标签管理**
+
+   - 在提示词详情页标题上方可添加标签
+   - 输入新标签名称回车即可创建并关联
+   - 支持从项目已有标签中选择
+   - 点击标签上的 × 可移除标签
+   - 在项目首页，标签栏支持多选过滤提示词（并集逻辑）
+6. **权限管理**（管理员）
 
    - 访问 http://localhost:5000/admin
    - 创建用户和用户组
@@ -204,6 +212,15 @@ curl "http://localhost:5000/api/projects?api_key=pk_your_api_key_here"
 - `GET /api/prompts/<id>/versions` - 获取提示词的所有版本
 - `GET /api/versions/<id>` - 获取版本详情
 - `PUT /api/versions/<id>/rename` - 重命名版本
+
+##### 标签相关
+
+- `GET /api/projects/<id>/tags` - 获取项目下所有标签
+- `POST /api/projects/<id>/tags` - 创建新标签
+- `GET /api/prompts/<id>/tags` - 获取提示词的标签列表
+- `POST /api/prompts/<id>/tags` - 给提示词添加标签
+- `DELETE /api/prompts/<id>/tags/<tag_id>` - 移除提示词的标签
+- `GET /api/projects/<id>/prompts-by-tags?tag_ids=1,2` - 按标签筛选提示词
 
 ##### 用户相关
 

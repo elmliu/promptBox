@@ -170,7 +170,7 @@ function renderPrompts() {
     prompts.forEach(prompt => {
         const div = document.createElement('div');
         div.className = 'prompt-item';
-        div.onclick = () => window.open(`/prompt/${prompt.id}`, '_blank');
+        div.onclick = () => window.location.href = `/prompt/${prompt.id}`;
         div.innerHTML = `
             <h3>${escapeHtml(prompt.title)}</h3>
             <p>${escapeHtml(prompt.content)}</p>

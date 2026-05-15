@@ -39,6 +39,7 @@ A lightweight, comprehensive prompt management system built with Python Flask an
 
 - **Project management**: Create, view, edit, and delete projects
 - **Prompt management**: Create, view, edit, and delete prompts
+- **Tag management**: Add tags to prompts, filter prompts by tags
 - **Version control**: Automatically saves history versions with version recovery support
 - **Version naming**: Add custom names to important versions
 - **Project-based categorization**: Clear hierarchical structure for easy management
@@ -146,7 +147,14 @@ The system automatically creates a default admin account on first run:
    - Editing a prompt automatically creates a new version
    - Click on history versions to restore to any version
    - Add custom names to important versions
-5. **Permission Management** (Admin)
+5. **Tag Management**
+
+   - Add tags above the title on the prompt detail page
+   - Type a new tag name and press Enter to create and associate
+   - Select from existing project tags via autocomplete
+   - Click × on a tag to remove it from the prompt
+   - On the project home page, multi-select tags to filter prompts (union logic)
+6. **Permission Management** (Admin)
 
    - Visit http://localhost:5000/admin
    - Create users and user groups
@@ -206,6 +214,15 @@ curl "http://localhost:5000/api/projects?api_key=pk_your_api_key_here"
 - `GET /api/prompts/<id>/versions` - Get all versions of a prompt
 - `GET /api/versions/<id>` - Get version details
 - `PUT /api/versions/<id>/rename` - Rename version
+
+##### Tag Related
+
+- `GET /api/projects/<id>/tags` - Get all tags in a project
+- `POST /api/projects/<id>/tags` - Create a new tag
+- `GET /api/prompts/<id>/tags` - Get tags of a prompt
+- `POST /api/prompts/<id>/tags` - Add a tag to a prompt
+- `DELETE /api/prompts/<id>/tags/<tag_id>` - Remove a tag from a prompt
+- `GET /api/projects/<id>/prompts-by-tags?tag_ids=1,2` - Filter prompts by tags
 
 ##### User Related
 
