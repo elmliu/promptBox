@@ -64,6 +64,7 @@ function renderResults(data, query) {
             <h3>${highlightedTitle}</h3>
             <p>${highlightedContent}</p>
             <div class="search-meta">
+                <span class="search-project">项目: ${escapeHtml(prompt.project_name || '未知')}</span>
                 <span>更新时间: ${prompt.updated_at}</span>
             </div>
         `;

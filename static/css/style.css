@@ -793,3 +793,25 @@ body {
     padding: 0 2px;
     border-radius: 2px;
 }
+
+
+/* Project info styles */
+.prompt-project-info {
+    margin-bottom: 12px;
+}
+
+.project-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    background-color: #f0f7ff;
+    color: #1976d2;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.search-project {
+    color: #1976d2;
+    font-weight: 500;
+    margin-right: 15px;
+}

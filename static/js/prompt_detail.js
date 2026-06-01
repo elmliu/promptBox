@@ -223,6 +223,11 @@ function displayPrompt() {
     document.getElementById('createdAt').textContent = promptData.created_at;
     document.getElementById('updatedAt').textContent = promptData.updated_at;
     
+    const projectInfo = document.getElementById('promptProjectInfo');
+    if (promptData.project_name) {
+        projectInfo.innerHTML = `<span class="project-badge">📁 ${escapeHtml(promptData.project_name)}</span>`;
+    }
+    
     const editBtn = document.getElementById('editBtn');
     const deleteBtn = document.querySelector('.btn-danger');
     

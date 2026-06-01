@@ -279,7 +279,13 @@ class PromptModel:
         return self.db.fetch_all('SELECT * FROM prompts ORDER BY created_at DESC')
 
     def get_by_id(self, prompt_id: int) -> Optional[Dict[str, Any]]:
-        return self.db.fetch_one('SELECT * FROM prompts WHERE id = ?', (prompt_id,))
+        return self.db.fetch_one(
+            '''SELECT p.*, proj.name as project_name 
+               FROM prompts p 
+               JOIN projects proj ON p.project_id = proj.id 
+               WHERE p.id = ?''',
+            (prompt_id,)
+        )
 
     def update(self, prompt_id: int, title: str = None, content: str = None) -> bool:
         updates = []
@@ -316,7 +322,7 @@ class PromptModel:
         params = []
         
         for kw in keywords:
-            conditions.append('(title LIKE ? OR content LIKE ?)')
+            conditions.append('(p.title LIKE ? OR p.content LIKE ?)')
             params.append(f'%{kw}%')
             params.append(f'%{kw}%')
         
@@ -324,10 +330,14 @@ class PromptModel:
         
         if project_ids:
             placeholders = ','.join(['?' for _ in project_ids])
-            where_clause += f' AND project_id IN ({placeholders})'
+            where_clause += f' AND p.project_id IN ({placeholders})'
             params.extend(project_ids)
         
-        query = f'SELECT * FROM prompts WHERE {where_clause} ORDER BY updated_at DESC'
+        query = f'''SELECT p.*, proj.name as project_name 
+                    FROM prompts p 
+                    JOIN projects proj ON p.project_id = proj.id 
+                    WHERE {where_clause} 
+                    ORDER BY p.updated_at DESC'''
         return self.db.fetch_all(query, tuple(params))
 
 
