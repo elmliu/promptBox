@@ -55,7 +55,7 @@ function renderResults(data, query) {
     data.forEach(prompt => {
         const div = document.createElement('div');
         div.className = 'prompt-item';
-        div.onclick = () => window.location.href = `/prompt/${prompt.id}`;
+        div.onclick = () => window.open(`/prompt/${prompt.id}`, '_blank');
         
         const highlightedTitle = highlightText(prompt.title, keywords);
         const highlightedContent = highlightText(truncateText(prompt.content, 200), keywords);
