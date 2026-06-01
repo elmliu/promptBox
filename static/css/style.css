@@ -716,3 +716,80 @@ body {
     background-color: #1976d2;
     color: white;
 }
+
+
+/* Search styles */
+.search-input {
+    padding: 6px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 13px;
+    width: 200px;
+    outline: none;
+}
+
+.search-input:focus {
+    border-color: #1976d2;
+}
+
+.search-page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 30px 20px;
+    min-height: 100vh;
+    background-color: #fff;
+}
+
+.search-header {
+    margin-bottom: 30px;
+}
+
+.search-header h1 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+.search-bar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.search-input-large {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+}
+
+.search-input-large:focus {
+    border-color: #1976d2;
+}
+
+.search-results {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.search-count {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.search-meta {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #999;
+}
+
+.search-results mark {
+    background-color: #fff3cd;
+    color: #333;
+    padding: 0 2px;
+    border-radius: 2px;
+}

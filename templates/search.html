@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>搜索结果</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="search-page">
+        <div class="search-header">
+            <h1>搜索结果</h1>
+            <div class="search-bar">
+                <input type="text" id="searchInput" class="search-input-large" placeholder="搜索关键词 空格分隔" onkeydown="handleSearch(event)">
+                <button class="btn btn-primary" onclick="doSearch()">搜索</button>
+                <button class="btn btn-secondary" onclick="window.close()">关闭</button>
+            </div>
+        </div>
+        <div class="search-results" id="searchResults">
+            <p style="color: #999; text-align: center; margin-top: 40px;">输入关键词开始搜索</p>
+        </div>
+    </div>
+
+    <script src="/static/js/search.js"></script>
+</body>
+</html>

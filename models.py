@@ -307,6 +307,29 @@ class PromptModel:
         self.db.execute_query('DELETE FROM prompts WHERE id = ?', (prompt_id,))
         return True
 
+    def search(self, keywords: List[str], project_ids: List[int] = None) -> List[Dict[str, Any]]:
+        """按关键词搜索提示词标题和内容，所有关键词必须同时匹配（AND逻辑）"""
+        if not keywords:
+            return []
+        
+        conditions = []
+        params = []
+        
+        for kw in keywords:
+            conditions.append('(title LIKE ? OR content LIKE ?)')
+            params.append(f'%{kw}%')
+            params.append(f'%{kw}%')
+        
+        where_clause = ' AND '.join(conditions)
+        
+        if project_ids:
+            placeholders = ','.join(['?' for _ in project_ids])
+            where_clause += f' AND project_id IN ({placeholders})'
+            params.extend(project_ids)
+        
+        query = f'SELECT * FROM prompts WHERE {where_clause} ORDER BY updated_at DESC'
+        return self.db.fetch_all(query, tuple(params))
+
 
 class PromptVersionModel:
     def __init__(self, db: Database):

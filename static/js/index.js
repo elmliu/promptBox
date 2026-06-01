@@ -303,6 +303,15 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+function handleSearch(event) {
+    if (event.key === 'Enter') {
+        const query = document.getElementById('searchInput').value.trim();
+        if (query) {
+            window.open(`/search?q=${encodeURIComponent(query)}`, '_blank');
+        }
+    }
+}
+
 loadCurrentUser();
 loadProjects().then(() => {
     const params = new URLSearchParams(window.location.search);

@@ -21,6 +21,7 @@
             <div class="main-header">
                 <h2 id="currentProjectTitle">所有提示词</h2>
                 <div class="header-actions">
+                    <input type="text" id="searchInput" class="search-input" placeholder="搜索关键词 空格分隔" onkeydown="handleSearch(event)">
                     <span id="currentUser"></span>
                     <button class="btn btn-secondary btn-sm" onclick="window.location.href='/admin'">后台管理</button>
                     <button class="btn btn-danger btn-sm" onclick="logout()">退出</button>

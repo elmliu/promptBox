@@ -229,6 +229,35 @@ def prompt_detail(prompt_id):
     return render_template('prompt_detail.html', prompt_id=prompt_id)
 
 
+@app.route('/search')
+@login_required
+def search_page():
+    return render_template('search.html')
+
+
+@app.route('/api/search', methods=['GET'])
+@login_required
+def api_search():
+    q = request.args.get('q', '').strip()
+    if not q:
+        return jsonify({'success': True, 'data': []})
+    
+    keywords = q.split()
+    
+    # 权限控制：普通用户只能搜索有权限的项目
+    if is_admin():
+        results = prompt_model.search(keywords)
+    else:
+        user_id = get_current_user_id()
+        user_projects = project_permission_model.get_user_projects(user_id)
+        project_ids = [p['id'] for p in user_projects]
+        if not project_ids:
+            return jsonify({'success': True, 'data': []})
+        results = prompt_model.search(keywords, project_ids)
+    
+    return jsonify({'success': True, 'data': results})
+
+
 @app.route('/api/projects', methods=['GET'])
 @login_required
 def get_projects():
