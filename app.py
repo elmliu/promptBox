@@ -86,6 +86,16 @@ def is_admin_or_in_admin_group():
     return any(g['name'] == '管理员组' for g in user_groups)
 
 
+def can_write_project(project_id):
+    """检查当前用户是否有项目写权限"""
+    if is_admin_or_in_admin_group():
+        return True
+    user_id = get_current_user_id()
+    if not user_id:
+        return False
+    return project_permission_model.check_user_can_write(user_id, project_id)
+
+
 @app.route('/')
 def index():
     if 'user_id' not in session:
@@ -315,10 +325,8 @@ def update_project(project_id):
     name = data.get('name')
     description = data.get('description')
     
-    if not is_admin():
-        user_id = get_current_user_id()
-        if not project_permission_model.check_user_project_permission(user_id, project_id):
-            return jsonify({'success': False, 'error': '没有权限修改此项目'}), 403
+    if not can_write_project(project_id):
+        return jsonify({'success': False, 'error': '没有权限修改此项目'}), 403
     
     try:
         project_model.update(project_id, name, description)
@@ -362,10 +370,8 @@ def create_prompt():
     if not project_id or not title:
         return jsonify({'success': False, 'error': '缺少必要参数'}), 400
     
-    if not is_admin():
-        user_id = get_current_user_id()
-        if not project_permission_model.check_user_project_permission(user_id, project_id):
-            return jsonify({'success': False, 'error': '没有权限在此项目中创建提示词'}), 403
+    if not can_write_project(project_id):
+        return jsonify({'success': False, 'error': '没有权限在此项目中创建提示词'}), 403
     
     try:
         prompt_id = prompt_model.create(project_id, title, content)
@@ -386,6 +392,9 @@ def get_prompt(prompt_id):
         if not project_permission_model.check_user_project_permission(user_id, prompt['project_id']):
             return jsonify({'success': False, 'error': '没有权限访问此提示词'}), 403
     
+    # 附加 can_edit 字段
+    prompt['can_edit'] = can_write_project(prompt['project_id'])
+    
     return jsonify({'success': True, 'data': prompt})
 
 
@@ -401,10 +410,8 @@ def update_prompt(prompt_id):
         if not prompt:
             return jsonify({'success': False, 'error': '提示词不存在'}), 404
         
-        if not is_admin():
-            user_id = get_current_user_id()
-            if not project_permission_model.check_user_project_permission(user_id, prompt['project_id']):
-                return jsonify({'success': False, 'error': '没有权限修改此提示词'}), 403
+        if not can_write_project(prompt['project_id']):
+            return jsonify({'success': False, 'error': '没有权限修改此提示词'}), 403
         
         current_version_number = prompt_version_model.get_current_version_number(prompt_id)
         new_version_number = current_version_number + 1
@@ -429,10 +436,8 @@ def delete_prompt(prompt_id):
     if not prompt:
         return jsonify({'success': False, 'error': '提示词不存在'}), 404
     
-    if not is_admin():
-        user_id = get_current_user_id()
-        if not project_permission_model.check_user_project_permission(user_id, prompt['project_id']):
-            return jsonify({'success': False, 'error': '没有权限删除此提示词'}), 403
+    if not can_write_project(prompt['project_id']):
+        return jsonify({'success': False, 'error': '没有权限删除此提示词'}), 403
     
     prompt_model.delete(prompt_id)
     return jsonify({'success': True})
@@ -483,10 +488,8 @@ def rename_version(version_id):
         if not version:
             return jsonify({'success': False, 'error': '版本不存在'}), 404
         
-        if not is_admin():
-            user_id = get_current_user_id()
-            if not project_permission_model.check_user_project_permission(user_id, version['project_id']):
-                return jsonify({'success': False, 'error': '没有权限修改此版本'}), 403
+        if not can_write_project(version['project_id']):
+            return jsonify({'success': False, 'error': '没有权限修改此版本'}), 403
         
         prompt_version_model.update_version_name(version_id, version_name)
         return jsonify({'success': True})
@@ -654,12 +657,16 @@ def grant_project_permission():
     project_id = data.get('project_id')
     user_id = data.get('user_id')
     group_id = data.get('group_id')
+    level = data.get('permission_level', 'readwrite')
+    
+    if level not in ('read', 'readwrite'):
+        return jsonify({'success': False, 'error': '权限级别无效，应为 read 或 readwrite'}), 400
     
     if not project_id or (not user_id and not group_id):
         return jsonify({'success': False, 'error': '缺少必要参数'}), 400
     
     try:
-        permission_id = project_permission_model.grant_permission(project_id, user_id, group_id)
+        permission_id = project_permission_model.grant_permission(project_id, user_id, group_id, level)
         return jsonify({'success': True, 'data': {'id': permission_id}})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 400
@@ -674,11 +681,36 @@ def revoke_project_permission(permission_id):
     return jsonify({'success': True})
 
 
+@app.route('/api/project-permissions/<int:permission_id>/level', methods=['PUT'])
+@login_required
+def update_permission_level(permission_id):
+    if not is_admin_or_in_admin_group():
+        return jsonify({'success': False, 'error': '没有权限'}), 403
+    
+    data = request.get_json()
+    level = data.get('permission_level')
+    
+    if level not in ('read', 'readwrite'):
+        return jsonify({'success': False, 'error': '权限级别无效，应为 read 或 readwrite'}), 400
+    
+    try:
+        project_permission_model.update_permission_level(permission_id, level)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
 @app.route('/api/projects/<int:project_id>/can-delete', methods=['GET'])
 @login_required
 def can_delete_project(project_id):
     can_delete = is_admin_or_in_admin_group()
     return jsonify({'success': True, 'data': {'can_delete': can_delete}})
+
+
+@app.route('/api/projects/<int:project_id>/can-edit', methods=['GET'])
+@login_required
+def can_edit_project(project_id):
+    return jsonify({'success': True, 'data': {'can_edit': can_write_project(project_id)}})
 
 
 @app.route('/api/projects/<int:project_id>/tags', methods=['GET'])
@@ -695,10 +727,8 @@ def get_project_tags(project_id):
 @app.route('/api/projects/<int:project_id>/tags', methods=['POST'])
 @login_required
 def create_tag(project_id):
-    if not is_admin():
-        user_id = get_current_user_id()
-        if not project_permission_model.check_user_project_permission(user_id, project_id):
-            return jsonify({'success': False, 'error': '没有权限'}), 403
+    if not can_write_project(project_id):
+        return jsonify({'success': False, 'error': '没有权限'}), 403
     
     data = request.get_json()
     name = data.get('name', '').strip()
@@ -736,10 +766,8 @@ def add_tag_to_prompt(prompt_id):
     if not prompt:
         return jsonify({'success': False, 'error': '提示词不存在'}), 404
     
-    if not is_admin():
-        user_id = get_current_user_id()
-        if not project_permission_model.check_user_project_permission(user_id, prompt['project_id']):
-            return jsonify({'success': False, 'error': '没有权限'}), 403
+    if not can_write_project(prompt['project_id']):
+        return jsonify({'success': False, 'error': '没有权限'}), 403
     
     data = request.get_json()
     tag_id = data.get('tag_id')
@@ -765,10 +793,8 @@ def remove_tag_from_prompt(prompt_id, tag_id):
     if not prompt:
         return jsonify({'success': False, 'error': '提示词不存在'}), 404
     
-    if not is_admin():
-        user_id = get_current_user_id()
-        if not project_permission_model.check_user_project_permission(user_id, prompt['project_id']):
-            return jsonify({'success': False, 'error': '没有权限'}), 403
+    if not can_write_project(prompt['project_id']):
+        return jsonify({'success': False, 'error': '没有权限'}), 403
     
     tag_model.remove_tag_from_prompt(prompt_id, tag_id)
     return jsonify({'success': True})

@@ -62,7 +62,11 @@ function renderPromptTags() {
     promptTags.forEach(tag => {
         const span = document.createElement('span');
         span.className = 'tag-item';
-        span.innerHTML = `${escapeHtml(tag.name)}<span class="tag-remove" onclick="removeTag(${tag.id})">&times;</span>`;
+        if (promptData && promptData.can_edit) {
+            span.innerHTML = `${escapeHtml(tag.name)}<span class="tag-remove" onclick="removeTag(${tag.id})">&times;</span>`;
+        } else {
+            span.innerHTML = escapeHtml(tag.name);
+        }
         tagList.appendChild(span);
     });
 }
@@ -229,11 +233,23 @@ function displayPrompt() {
     }
     
     const editBtn = document.getElementById('editBtn');
+    const saveBtn = document.getElementById('saveBtn');
     const deleteBtn = document.querySelector('.btn-danger');
+    const tagInput = document.getElementById('tagInput');
     
-    editBtn.disabled = false;
-    editBtn.textContent = '编辑';
-    deleteBtn.disabled = false;
+    if (promptData.can_edit) {
+        editBtn.style.display = 'inline-block';
+        editBtn.disabled = false;
+        editBtn.textContent = '编辑';
+        deleteBtn.style.display = 'inline-block';
+        deleteBtn.disabled = false;
+        if (tagInput) tagInput.style.display = 'block';
+    } else {
+        editBtn.style.display = 'none';
+        saveBtn.style.display = 'none';
+        deleteBtn.style.display = 'none';
+        if (tagInput) tagInput.style.display = 'none';
+    }
 }
 
 function toggleEditMode() {

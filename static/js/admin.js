@@ -43,6 +43,7 @@ function renderUsers() {
                 <h3>${escapeHtml(user.username)}</h3>
                 <p>${user.is_admin ? '管理员' : '普通用户'}</p>
                 <p>创建时间: ${user.created_at}</p>
+                <div class="user-groups-list" id="userGroups_${user.id}"></div>
             </div>
             <div class="user-actions">
                 <button class="btn btn-secondary btn-sm" onclick="showAssignGroupModal(${user.id})">分配用户组</button>
@@ -50,7 +51,50 @@ function renderUsers() {
             </div>
         `;
         usersList.appendChild(div);
+        loadUserGroups(user.id);
     });
+}
+
+async function loadUserGroups(userId) {
+    try {
+        const response = await fetch(`/api/users/${userId}/groups`);
+        const result = await response.json();
+        if (result.success) {
+            const container = document.getElementById(`userGroups_${userId}`);
+            if (result.data.length === 0) {
+                container.innerHTML = '<span class="no-groups-text">未分配用户组</span>';
+            } else {
+                container.innerHTML = result.data.map(g => `
+                    <span class="user-group-tag">
+                        ${escapeHtml(g.name)}
+                        <span class="user-group-remove" onclick="removeUserFromGroup(${userId}, ${g.id})">&times;</span>
+                    </span>
+                `).join('');
+            }
+        }
+    } catch (error) {
+        console.error('加载用户组失败:', error);
+    }
+}
+
+async function removeUserFromGroup(userId, groupId) {
+    if (!confirm('确定要将该用户从此用户组中移除吗？')) return;
+    try {
+        const response = await fetch('/api/user-groups', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId, group_id: groupId })
+        });
+        const result = await response.json();
+        if (result.success) {
+            loadUserGroups(userId);
+        } else {
+            alert(result.error || '移除失败');
+        }
+    } catch (error) {
+        console.error('移除失败:', error);
+        alert('移除失败');
+    }
 }
 
 async function loadGroups() {
@@ -121,8 +165,11 @@ async function renderProjects() {
                 ${permissions.length === 0 ? '<p class="no-permissions">暂无权限分配</p>' : ''}
                 ${permissions.map(perm => `
                     <div class="permission-item">
-                        <span>${perm.group_name ? `用户组: ${escapeHtml(perm.group_name)}` : `用户: ${escapeHtml(perm.username)}`}</span>
-                        <button class="btn btn-danger btn-sm" onclick="revokePermission(${perm.id})">撤销</button>
+                        <span>${perm.group_name ? `用户组: ${escapeHtml(perm.group_name)}` : `用户: ${escapeHtml(perm.username)}`} <span class="permission-level-badge ${perm.permission_level === 'read' ? 'level-read' : 'level-readwrite'}">${perm.permission_level === 'read' ? '只读' : '读写'}</span></span>
+                        <div class="permission-actions">
+                            <button class="btn btn-secondary btn-sm" onclick="togglePermissionLevel(${perm.id}, '${perm.permission_level}')">${perm.permission_level === 'read' ? '改为读写' : '改为只读'}</button>
+                            <button class="btn btn-danger btn-sm" onclick="revokePermission(${perm.id})">撤销</button>
+                        </div>
                     </div>
                 `).join('')}
             </div>
@@ -359,7 +406,8 @@ function togglePermissionOptions() {
 
 async function grantPermission() {
     const type = document.getElementById('permissionType').value;
-    const data = { project_id: currentProjectId };
+    const level = document.getElementById('permissionLevel').value;
+    const data = { project_id: currentProjectId, permission_level: level };
     
     if (type === 'group') {
         data.group_id = parseInt(document.getElementById('permissionGroupSelect').value);
@@ -406,6 +454,26 @@ async function revokePermission(permissionId) {
     } catch (error) {
         console.error('撤销权限失败:', error);
         alert('撤销权限失败');
+    }
+}
+
+async function togglePermissionLevel(permissionId, currentLevel) {
+    const newLevel = currentLevel === 'read' ? 'readwrite' : 'read';
+    try {
+        const response = await fetch(`/api/project-permissions/${permissionId}/level`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ permission_level: newLevel })
+        });
+        const result = await response.json();
+        if (result.success) {
+            loadProjects();
+        } else {
+            alert(result.error || '修改权限级别失败');
+        }
+    } catch (error) {
+        console.error('修改权限级别失败:', error);
+        alert('修改权限级别失败');
     }
 }
 

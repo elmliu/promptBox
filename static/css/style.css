@@ -815,3 +815,65 @@ body {
     font-weight: 500;
     margin-right: 15px;
 }
+
+
+/* Permission level badges */
+.permission-level-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+    margin-left: 8px;
+}
+
+.level-readwrite {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+.level-read {
+    background-color: #fff3e0;
+    color: #e65100;
+}
+
+
+/* User group tags in admin */
+.user-groups-list {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.user-group-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    background-color: #e8eaf6;
+    color: #3949ab;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+.user-group-remove {
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    opacity: 0.6;
+}
+
+.user-group-remove:hover {
+    opacity: 1;
+}
+
+.no-groups-text {
+    font-size: 12px;
+    color: #999;
+}
+
+.permission-actions {
+    display: flex;
+    gap: 8px;
+}

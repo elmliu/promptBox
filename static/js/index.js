@@ -60,11 +60,26 @@ function selectProject(projectId) {
     selectedTagIds = [];
     const project = projects.find(p => p.id === projectId);
     document.getElementById('currentProjectTitle').textContent = project ? project.name : '所有提示词';
-    document.getElementById('createPromptBtn').disabled = !projectId;
+    document.getElementById('createPromptBtn').disabled = true;
     renderProjects();
     loadPrompts();
     loadProjectTags();
     checkCanDeleteProject();
+    checkCanEditProject();
+}
+
+async function checkCanEditProject() {
+    if (!currentProjectId) {
+        document.getElementById('createPromptBtn').disabled = true;
+        return;
+    }
+    try {
+        const response = await fetch(`/api/projects/${currentProjectId}/can-edit`);
+        const result = await response.json();
+        document.getElementById('createPromptBtn').disabled = !(result.success && result.data.can_edit);
+    } catch (error) {
+        document.getElementById('createPromptBtn').disabled = true;
+    }
 }
 
 async function loadProjectTags() {

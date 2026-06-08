@@ -210,6 +210,15 @@ class Database:
             cursor.execute('UPDATE prompt_versions SET project_id = (SELECT project_id FROM prompts WHERE id = prompt_versions.prompt_id)')
             conn.commit()
         
+        # 添加权限级别字段
+        cursor.execute("PRAGMA table_info(project_permissions)")
+        columns = [column[1] for column in cursor.fetchall()]
+        
+        if 'permission_level' not in columns:
+            cursor.execute("ALTER TABLE project_permissions ADD COLUMN permission_level TEXT DEFAULT 'readwrite'")
+            cursor.execute("UPDATE project_permissions SET permission_level = 'readwrite' WHERE permission_level IS NULL")
+            conn.commit()
+        
         conn.close()
 
 
@@ -513,13 +522,20 @@ class ProjectPermissionModel:
     def __init__(self, db: Database):
         self.db = db
 
-    def grant_permission(self, project_id: int, user_id: int = None, group_id: int = None) -> int:
+    def grant_permission(self, project_id: int, user_id: int = None, group_id: int = None, level: str = 'readwrite') -> int:
         now = now_beijing()
         cursor = self.db.execute_query(
-            'INSERT INTO project_permissions (project_id, user_id, group_id, created_at) VALUES (?, ?, ?, ?)',
-            (project_id, user_id, group_id, now)
+            'INSERT INTO project_permissions (project_id, user_id, group_id, permission_level, created_at) VALUES (?, ?, ?, ?, ?)',
+            (project_id, user_id, group_id, level, now)
         )
         return cursor.lastrowid
+
+    def update_permission_level(self, permission_id: int, level: str) -> bool:
+        self.db.execute_query(
+            'UPDATE project_permissions SET permission_level = ? WHERE id = ?',
+            (level, permission_id)
+        )
+        return True
 
     def revoke_permission(self, permission_id: int) -> bool:
         self.db.execute_query('DELETE FROM project_permissions WHERE id = ?', (permission_id,))
@@ -551,6 +567,17 @@ class ProjectPermissionModel:
             '''SELECT COUNT(*) as count FROM project_permissions pp 
                LEFT JOIN user_groups ug ON pp.group_id = ug.group_id 
                WHERE pp.project_id = ? AND (pp.user_id = ? OR ug.user_id = ?)''',
+            (project_id, user_id, user_id)
+        )
+        return result['count'] > 0 if result else False
+
+    def check_user_can_write(self, user_id: int, project_id: int) -> bool:
+        """检查用户对项目是否有写权限（直接授权或通过用户组）"""
+        result = self.db.fetch_one(
+            '''SELECT COUNT(*) as count FROM project_permissions pp 
+               LEFT JOIN user_groups ug ON pp.group_id = ug.group_id 
+               WHERE pp.project_id = ? AND (pp.user_id = ? OR ug.user_id = ?)
+               AND pp.permission_level = 'readwrite' ''',
             (project_id, user_id, user_id)
         )
         return result['count'] > 0 if result else False
