@@ -122,9 +122,9 @@ class Database:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 project_id INTEGER NOT NULL,
                 name TEXT NOT NULL,
+                active INTEGER DEFAULT 1,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE,
-                UNIQUE(project_id, name)
+                FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE
             )
         ''')
         
@@ -217,6 +217,38 @@ class Database:
         if 'permission_level' not in columns:
             cursor.execute("ALTER TABLE project_permissions ADD COLUMN permission_level TEXT DEFAULT 'readwrite'")
             cursor.execute("UPDATE project_permissions SET permission_level = 'readwrite' WHERE permission_level IS NULL")
+            conn.commit()
+        
+        # 添加标签 active 字段并移除 UNIQUE 约束
+        cursor.execute("PRAGMA table_info(tags)")
+        columns = [column[1] for column in cursor.fetchall()]
+        
+        if 'active' not in columns:
+            # 需要重建 tags 表以移除 UNIQUE(project_id, name) 约束
+            cursor.execute('ALTER TABLE tags RENAME TO tags_old')
+            cursor.execute('''
+                CREATE TABLE tags (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    project_id INTEGER NOT NULL,
+                    name TEXT NOT NULL,
+                    active INTEGER DEFAULT 1,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE
+                )
+            ''')
+            cursor.execute('''
+                INSERT INTO tags (id, project_id, name, active, created_at)
+                SELECT id, project_id, name, 1, created_at FROM tags_old
+            ''')
+            cursor.execute('DROP TABLE tags_old')
+            conn.commit()
+        
+        # 将没有关联提示词的标签标记为失效
+        cursor.execute('''
+            UPDATE tags SET active = 0 
+            WHERE active = 1 AND id NOT IN (SELECT DISTINCT tag_id FROM prompt_tags)
+        ''')
+        if cursor.rowcount > 0:
             conn.commit()
         
         conn.close()
@@ -636,23 +668,26 @@ class TagModel:
         self.db = db
 
     def create(self, project_id: int, name: str) -> int:
+        """创建新标签，始终创建新条目（不复用已失效的同名标签）"""
         now = now_beijing()
-        cursor = self.db.execute_query(
-            'INSERT OR IGNORE INTO tags (project_id, name, created_at) VALUES (?, ?, ?)',
-            (project_id, name, now)
-        )
-        if cursor.lastrowid:
-            return cursor.lastrowid
-        # If already exists, return existing id
-        result = self.db.fetch_one(
-            'SELECT id FROM tags WHERE project_id = ? AND name = ?',
+        # 先检查是否有同名的活跃标签
+        existing = self.db.fetch_one(
+            'SELECT id FROM tags WHERE project_id = ? AND name = ? AND active = 1',
             (project_id, name)
         )
-        return result['id'] if result else 0
+        if existing:
+            return existing['id']
+        # 创建新标签
+        cursor = self.db.execute_query(
+            'INSERT INTO tags (project_id, name, active, created_at) VALUES (?, ?, 1, ?)',
+            (project_id, name, now)
+        )
+        return cursor.lastrowid
 
     def get_project_tags(self, project_id: int) -> List[Dict[str, Any]]:
+        """只返回活跃的标签"""
         return self.db.fetch_all(
-            'SELECT * FROM tags WHERE project_id = ? ORDER BY name',
+            'SELECT * FROM tags WHERE project_id = ? AND active = 1 ORDER BY name',
             (project_id,)
         )
 
@@ -660,7 +695,7 @@ class TagModel:
         return self.db.fetch_all(
             '''SELECT t.* FROM tags t
                JOIN prompt_tags pt ON t.id = pt.tag_id
-               WHERE pt.prompt_id = ?
+               WHERE pt.prompt_id = ? AND t.active = 1
                ORDER BY t.name''',
             (prompt_id,)
         )
@@ -681,7 +716,21 @@ class TagModel:
             'DELETE FROM prompt_tags WHERE prompt_id = ? AND tag_id = ?',
             (prompt_id, tag_id)
         )
+        # 检查该标签是否还有关联的提示词，如果没有则标记为失效
+        self._deactivate_if_orphan(tag_id)
         return True
+
+    def _deactivate_if_orphan(self, tag_id: int):
+        """如果标签没有任何关联的提示词，标记为失效"""
+        result = self.db.fetch_one(
+            'SELECT COUNT(*) as count FROM prompt_tags WHERE tag_id = ?',
+            (tag_id,)
+        )
+        if result and result['count'] == 0:
+            self.db.execute_query(
+                'UPDATE tags SET active = 0 WHERE id = ?',
+                (tag_id,)
+            )
 
     def delete(self, tag_id: int) -> bool:
         self.db.execute_query('DELETE FROM tags WHERE id = ?', (tag_id,))

@@ -57,7 +57,9 @@ function renderProjects() {
 
 function selectProject(projectId) {
     currentProjectId = projectId;
-    selectedTagIds = [];
+    // 恢复之前保存的标签选中状态
+    const savedTags = sessionStorage.getItem(`selectedTags_${projectId}`);
+    selectedTagIds = savedTags ? JSON.parse(savedTags) : [];
     const project = projects.find(p => p.id === projectId);
     document.getElementById('currentProjectTitle').textContent = project ? project.name : '所有提示词';
     document.getElementById('createPromptBtn').disabled = true;
@@ -130,6 +132,10 @@ function toggleTagFilter(tagId) {
     } else {
         selectedTagIds.splice(index, 1);
     }
+    // 保存标签选中状态到 sessionStorage
+    if (currentProjectId) {
+        sessionStorage.setItem(`selectedTags_${currentProjectId}`, JSON.stringify(selectedTagIds));
+    }
     renderTagFilters();
     loadPrompts();
 }
@@ -186,9 +192,15 @@ function renderPrompts() {
         const div = document.createElement('div');
         div.className = 'prompt-item';
         div.onclick = () => window.location.href = `/prompt/${prompt.id}`;
+        
+        const tagsHtml = prompt.tags && prompt.tags.length > 0
+            ? `<div class="prompt-item-tags">${prompt.tags.map(t => `<span class="prompt-item-tag">${escapeHtml(t.name)}</span>`).join('')}</div>`
+            : '';
+        
         div.innerHTML = `
             <h3>${escapeHtml(prompt.title)}</h3>
             <p>${escapeHtml(prompt.content)}</p>
+            ${tagsHtml}
         `;
         promptList.appendChild(div);
     });

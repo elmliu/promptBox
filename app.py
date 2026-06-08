@@ -356,6 +356,9 @@ def get_prompts():
                 return jsonify({'success': False, 'error': '没有权限访问此项目的提示词'}), 403
     
     prompts = prompt_model.get_all(project_id)
+    # 为每个提示词附加标签
+    for p in prompts:
+        p['tags'] = tag_model.get_prompt_tags(p['id'])
     return jsonify({'success': True, 'data': prompts})
 
 
@@ -818,6 +821,8 @@ def get_prompts_by_tags(project_id):
         return jsonify({'success': False, 'error': '标签ID格式错误'}), 400
     
     prompts = tag_model.get_prompts_by_tags(project_id, tag_id_list)
+    for p in prompts:
+        p['tags'] = tag_model.get_prompt_tags(p['id'])
     return jsonify({'success': True, 'data': prompts})
 
 

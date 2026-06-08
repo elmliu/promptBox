@@ -802,12 +802,13 @@ body {
 
 .project-badge {
     display: inline-block;
-    padding: 4px 10px;
-    background-color: #f0f7ff;
-    color: #1976d2;
+    padding: 5px 12px;
+    background-color: #f3e5f5;
+    color: #7b1fa2;
     border-radius: 4px;
     font-size: 13px;
     font-weight: 500;
+    border: 1px solid #ce93d8;
 }
 
 .search-project {
@@ -876,4 +877,23 @@ body {
 .permission-actions {
     display: flex;
     gap: 8px;
+}
+
+
+/* Prompt item tags in list */
+.prompt-item-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.prompt-item-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    background-color: #e3f2fd;
+    color: #1976d2;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
 }
